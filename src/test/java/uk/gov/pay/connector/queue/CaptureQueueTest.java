@@ -46,6 +46,6 @@ public class CaptureQueueTest {
         );
         when(sqsQueueService.receiveMessages(anyString(), anyString())).thenReturn(messages);
         
-        CaptureQueue queue = new CaptureQueue(sqsQueueService, connectorConfiguration, cardCaptureMessageProcess);
+        CaptureQueue queue = new CaptureQueue(sqsQueueService, connectorConfiguration);
     }
 }
