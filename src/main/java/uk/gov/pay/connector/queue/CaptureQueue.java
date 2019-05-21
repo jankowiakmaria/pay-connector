@@ -47,35 +47,11 @@ public class CaptureQueue {
         logger.info("Charge [{}] added to capture queue. Message ID [{}]", externalId, queueMessage.getMessageId());
     }
     
-    public void receiveCaptureMessages() throws QueueException {
-        List<QueueMessage> captureMessages = sqsQueueService.receiveMessages(this.captureQueueUrl, CAPTURE_MESSAGE_ATTRIBUTE_NAME);
-        for (QueueMessage message: captureMessages) {
-            try {
-                logger.info("SQS message received [{}] - {}", message.getMessageId(), message.getMessageBody());
-
-                String externalChargeId = getExternalChargeIdFromMessage(message);
-
-                CaptureResponse gatewayResponse = cardCaptureMessageProcess.runCapture(externalChargeId);
-                
-                if (gatewayResponse.isSuccessful()) {
-                    sqsQueueService.deleteMessage(this.captureQueueUrl, message);
-                } else {
-                    logger.info(
-                            "Failed to capture [messageBody={}] due to: {}",
-                            message.getMessageBody(),
-                            gatewayResponse.getError().get().getMessage()
-                    );
-                }
-            } catch (Exception e) {
-                logger.warn("Error capturing charge from SQS message [{}]", e);
-            }
-        }
+    public List<QueueMessage> receiveCaptureMessages() throws QueueException {
+        return sqsQueueService.receiveMessages(this.captureQueueUrl, CAPTURE_MESSAGE_ATTRIBUTE_NAME);
     }
-
-    private String getExternalChargeIdFromMessage(QueueMessage message) {
-        JsonObject captureObject = new Gson().fromJson(message.getMessageBody(), JsonObject.class);
-        return captureObject.get("chargeId").getAsString();
+    
+    public void markMessageAsProcessed(QueueMessage message) throws QueueException {    
+        sqsQueueService.deleteMessage(this.captureQueueUrl, message);
     }
-
-
 }
