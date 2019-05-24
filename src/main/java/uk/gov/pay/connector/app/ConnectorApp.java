@@ -184,8 +184,8 @@ public class ConnectorApp extends Application<ConnectorConfiguration> {
                     environment, injector.getInstance(CardCaptureProcess.class), injector.getInstance(XrayUtils.class));
             environment.lifecycle().manage(captureProcessScheduler);
         }
-        
-        environment.lifecycle().manage(injector.getInstance(QueueMessageReceiver.class));
+
+        //environment.lifecycle().manage(injector.getInstance(QueueMessageReceiver.class));
     }
 
     private boolean isDisabledCaptureProcessScheduler(ConnectorConfiguration configuration) {

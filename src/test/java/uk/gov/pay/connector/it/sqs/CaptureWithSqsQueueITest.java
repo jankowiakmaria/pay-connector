@@ -6,6 +6,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.LoggingEvent;
 import ch.qos.logback.core.Appender;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -45,6 +46,7 @@ public class CaptureWithSqsQueueITest extends ChargingITestBase {
     }
 
     @Test
+    @Ignore
     public void shouldPickUpCaptureMessageFromQueue() {
         String chargeId = getIdOfCapturePutInTheQueue();
 
