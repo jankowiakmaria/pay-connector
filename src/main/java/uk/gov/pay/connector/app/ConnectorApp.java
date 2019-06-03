@@ -24,6 +24,7 @@ import io.dropwizard.setup.Environment;
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 import uk.gov.pay.commons.utils.logging.LoggingFilter;
 import uk.gov.pay.commons.utils.xray.Xray;
+import uk.gov.pay.connector.app.managed.ReadMetricsScheduler;
 import uk.gov.pay.connector.cardtype.resource.CardTypesResource;
 import uk.gov.pay.connector.charge.exception.ZeroAmountNotAllowedForGatewayAccountExceptionMapper;
 import uk.gov.pay.connector.charge.resource.ChargesApiResource;
@@ -188,6 +189,7 @@ public class ConnectorApp extends Application<ConnectorConfiguration> {
                     environment, injector.getInstance(CardCaptureProcess.class), injector.getInstance(XrayUtils.class));
             environment.lifecycle().manage(captureProcessScheduler);
         } else {
+            environment.lifecycle().manage(injector.getInstance(ReadMetricsScheduler.class));
             environment.lifecycle().manage(injector.getInstance(QueueMessageReceiver.class));
         }
     }
