@@ -15,7 +15,6 @@ public class ConnectorConfigurationIT {
     public final DropwizardAppRule<ConnectorConfiguration> RULE =
             new DropwizardAppRule<>(ConnectorApp.class, ResourceHelpers.resourceFilePath("config/test-config.yaml"));
 
-
     @Test
     public void shouldParseConfiguration() {
         JerseyClientOverrides jerseyClientOverrides = RULE.getConfiguration().getWorldpayConfig().getJerseyClientOverrides().get();
