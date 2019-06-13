@@ -4,17 +4,18 @@ import org.hamcrest.Matchers;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import uk.gov.pay.commons.model.ErrorIdentifier;
-import uk.gov.pay.commons.model.SupportedLanguage;
 import uk.gov.pay.commons.model.charge.ExternalMetadata;
 import uk.gov.pay.connector.app.ConnectorApp;
 import uk.gov.pay.connector.cardtype.model.domain.CardTypeEntity;
 import uk.gov.pay.connector.charge.model.ServicePaymentReference;
 import uk.gov.pay.connector.charge.model.domain.ChargeStatus;
 import uk.gov.pay.connector.it.base.ChargingITestBase;
+import uk.gov.pay.connector.junit.ConfigOverride;
 import uk.gov.pay.connector.junit.DropwizardConfig;
 import uk.gov.pay.connector.junit.DropwizardJUnitRunner;
 import uk.gov.pay.connector.model.domain.AuthCardDetailsFixture;
 import uk.gov.pay.connector.paymentprocessor.service.CardCaptureProcess;
+import uk.gov.pay.connector.queue.QueueException;
 import uk.gov.pay.connector.util.DateTimeUtils;
 import uk.gov.pay.connector.util.RandomIdGenerator;
 import uk.gov.pay.connector.wallets.WalletType;
@@ -55,7 +56,8 @@ import static uk.gov.pay.connector.refund.model.domain.RefundStatus.REFUNDED;
 import static uk.gov.pay.connector.util.AddChargeParams.AddChargeParamsBuilder.anAddChargeParams;
 
 @RunWith(DropwizardJUnitRunner.class)
-@DropwizardConfig(app = ConnectorApp.class, config = "config/test-it-config.yaml", withDockerSQS = true)
+@DropwizardConfig(app = ConnectorApp.class, config = "config/test-it-config.yaml", withDockerSQS = true,
+        configOverrides = {@ConfigOverride(key = "captureProcessConfig.captureUsingSQS", value = "true")})
 public class ChargesApiResourceIT extends ChargingITestBase {
 
     private static final String JSON_CHARGE_KEY = "charge_id";
@@ -70,7 +72,7 @@ public class ChargesApiResourceIT extends ChargingITestBase {
     }
 
     @Test
-    public void makeChargeSubmitCaptureAndCheckSettlementSummary() {
+    public void makeChargeSubmitCaptureAndCheckSettlementSummary() throws QueueException {
         ZonedDateTime startOfTest = ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC);
         String expectedDayOfCapture = DateTimeUtils.toUTCDateString(startOfTest);
 
@@ -82,8 +84,7 @@ public class ChargesApiResourceIT extends ChargingITestBase {
                 .statusCode(204);
 
         // Trigger the capture process programmatically which normally would be invoked by the scheduler.
-        testContext.getInstanceFromGuiceContainer(CardCaptureProcess.class).loadCaptureQueue();
-        testContext.getInstanceFromGuiceContainer(CardCaptureProcess.class).runCapture(1);
+        testContext.getInstanceFromGuiceContainer(CardCaptureProcess.class).handleCaptureMessages();
 
         getCharge(chargeId)
                 .body("settlement_summary.capture_submit_time", matchesPattern("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(.\\d{1,3})?Z"))
@@ -128,7 +129,7 @@ public class ChargesApiResourceIT extends ChargingITestBase {
                 .withAmount(AMOUNT)
                 .withStatus(AUTHORISATION_SUCCESS)
                 .build());
-        
+
         databaseTestHelper.updateChargeCardDetails(chargeId, AuthCardDetailsFixture.anAuthCardDetails().withCardNo("12345678").build());
         databaseTestHelper.addToken(chargeId, "tokenId");
 
@@ -182,7 +183,7 @@ public class ChargesApiResourceIT extends ChargingITestBase {
                 .withAmount(100)
                 .withStatus(ChargeStatus.AUTHORISATION_SUCCESS)
                 .build());
-        
+
         connectorRestApiClient
                 .withAccountId(accountId)
                 .withChargeId(externalChargeId)
